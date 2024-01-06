@@ -6,12 +6,30 @@ namespace SwimManager
     {
         static void Main(string[] args)
         {
-            var swimmers = Swimmer.GenerateSwimmers(250);
-            foreach (var s in swimmers)
-                Console.WriteLine(s.PrintWithPersonalBest(Style.Freestyle, 50));
+            int n=0;
+            do 
+            {
+              Console.WriteLine("Введите количество спортсменов: ");
+            }
+            while (!int.TryParse(Console.ReadLine(), out n) || n <= 0);
+          
+
+            var swimmers = Swimmer.GenerateSwimmers(n);
+
+            Console.WriteLine("Вывести спортсменов? (0 - нет, любая клавиша - да): ");
+            if (Console.ReadLine()!="0")
+              foreach (var s in swimmers)
+                    Console.WriteLine(s.PrintWithPersonalBest(Style.Freestyle, 50));
 
             Console.WriteLine("--------------------------");
 
+            int pathCount = 7;
+            do 
+            {
+              Console.WriteLine("Введите количество дорожек (2-10): ");
+            }
+            while (!int.TryParse(Console.ReadLine(), out pathCount) || pathCount < 2 || pathCount > 10);
+          
             List<(int, int)> Categories = new List<(int, int)>()
             {
                 (5,6),
@@ -23,7 +41,6 @@ namespace SwimManager
                 (17,18),
                 (18,99)
             };
-            int pathCount = 7;
             int currentYear = DateTime.Now.Year;
             foreach (var category in Categories)
             {

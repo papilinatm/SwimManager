@@ -25,7 +25,7 @@ namespace SwimManager
                 path[path.Count - p - 1] = pathCount - 2*p - 1;
             }
             List<int> pathOrder = new List<int>(pathCount);
-            foreach (var p in path.Order())
+            foreach (var p in path.OrderBy(p=>p))
                 pathOrder.Add(path.IndexOf(p));
             
 
@@ -36,12 +36,20 @@ namespace SwimManager
                 var run = new List<Swimmer>(pathCount);
                 for (int tmp = 0; tmp < pathCount; tmp++)
                     run.Add(null);
-                for (int j = 0; j < middlePath && i < participants.Count; j++, i++)
+                for (int j = 0; j < pathCount && i < participants.Count; j++, i++)
                 {
                     run[pathOrder[j]] = (i < qualified.Count()) ? qualified[i] : unqualified[i- qualified.Count()];
                 }
-
-                res.Add(run);
+                if (!run.All(s=>s==null))
+                    res.Add(run);
+            }
+            if (res.Count>1)
+            {
+                if(res.Last().Count(s=>s!=null)==1)
+                {
+                  res[res.Count-1][pathOrder[1]] = res[res.Count - 2][pathCount-1];
+                  res[res.Count - 2][pathCount-1] = null;
+                }    
             }
             return res;
         }
