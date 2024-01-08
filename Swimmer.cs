@@ -21,7 +21,7 @@ namespace SwimManager
             Date = dateTime;
             ShortWater = isShort;
         }
-
+        public long ID { get; set; }
         public Style Style { get; private set; }
         public int Distance { get; private set; }
         public bool ShortWater { get; private set; } = true;
@@ -49,11 +49,12 @@ namespace SwimManager
         {
         }
 
-        public string Name { get; private set; }
-        public int Year { get; private set; }
-        public Gender Gender { get; private set; }
+        public int ID { get; internal set; }
+        public string Name { get; internal set; }
+        public int Year { get; internal set; }
+        public Gender Gender { get; internal set; }
 
-        public List<Result> AllResults{ get; private set; } = new List<Result>();
+        public ICollection<Result> AllResults{ get; set; } = new List<Result>();
 
         public override string ToString()
         {

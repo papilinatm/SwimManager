@@ -1,4 +1,5 @@
-﻿using System.CodeDom.Compiler;
+﻿using Microsoft.EntityFrameworkCore;
+using System.CodeDom.Compiler;
 using System.Globalization;
 using System.Text;
 using System.Xml.Linq;
@@ -23,7 +24,8 @@ namespace SwimManager
 
         static void Main(string[] args)
         {
-            List<Swimmer> swimmers = null;
+            SwimDB db = new SwimDB();
+            bool emptyDB = db.Database.EnsureCreated();
             List<(int, int)> categories = new()
             {
                 (5, 6),
@@ -45,12 +47,15 @@ namespace SwimManager
                         return;
                     case 1:
                         {
+                            var swimmers = db.Swimmers.Include(s=>s.AllResults).ToList();
                             GenerateRuns(swimmers, new List<(int, int)> { (20,29), (30, 39)});
                             break;
                         }
                     case 2:
                         {
-                            swimmers = ParseResults();
+                            var swimmers = ParseResults();
+                            db.Swimmers.AddRange(swimmers);
+                            db.SaveChanges();
                             break;
                         }
                 }
