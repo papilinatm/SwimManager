@@ -27,8 +27,6 @@ namespace SwimManager
             List<int> pathOrder = new List<int>(pathCount);
             foreach (var p in path.OrderBy(p=>p))
                 pathOrder.Add(path.IndexOf(p));
-            
-
 
             int i = 0;
             for (int n = 0; n < runsCount; n++)
