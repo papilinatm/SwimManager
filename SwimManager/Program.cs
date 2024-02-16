@@ -48,7 +48,8 @@ namespace SwimManager
                     case 1:
                         {
                             var swimmers = db.Swimmers.Include(s=>s.AllResults).ToList();
-                            GenerateRuns(swimmers, new List<(int, int)> { (20,29), (30, 39)});
+                            //GenerateRuns(swimmers, new List<(int, int)> { (20,29), (30, 39)});
+                            GenerateRuns(Parser.ParseApplicationsFromXLSX());
                             break;
                         }
                     case 2:

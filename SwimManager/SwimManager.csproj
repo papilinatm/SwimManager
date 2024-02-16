@@ -8,12 +8,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="EPPlus" Version="7.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.25" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="83.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="data\names.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="data\xlsx\test.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

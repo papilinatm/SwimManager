@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SwimManager
 {
-    internal class Result
+    public class Result
     {
         public Result()
         {
@@ -36,7 +36,7 @@ namespace SwimManager
     }
 
 
-    internal class Swimmer
+    public class Swimmer
     {
         public Swimmer(string name, Gender gender, int year)
         {
@@ -51,14 +51,14 @@ namespace SwimManager
 
         public int ID { get; internal set; }
         public string Name { get; internal set; }
-        public int Year { get; internal set; }
-        public Gender Gender { get; internal set; }
+        public int? Year { get; internal set; }
+        public Gender? Gender { get; internal set; }
 
         public ICollection<Result> AllResults{ get; set; } = new List<Result>();
 
         public override string ToString()
         {
-            return $"{Name}, {(char)Gender}, {Year}";
+            return $"{Name}, {((char?)Gender)??'-'}, {Year}";
         }
         public string PrintWithPersonalBest(Style style, int distance)
         {
@@ -83,7 +83,7 @@ namespace SwimManager
                 swimmers.Add(new Swimmer()
                 {
                     Name = isBoy ? Data.Boys[boys++ % 100] : Data.Girls[girls++ % 100],
-                    Gender = isBoy ? Gender.Male : Gender.Female,
+                    Gender = isBoy ? SwimManager.Gender.Male : SwimManager.Gender.Female,
                     Year = rnd.Next(2000, 2018),
                     AllResults = new List<Result>() { Result.GeneratePersonalBest((Style)rnd.Next(2, 5)), Result.GeneratePersonalBest((Style)rnd.Next(2, 5), 25) }
                 }); ;
