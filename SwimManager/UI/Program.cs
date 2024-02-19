@@ -10,14 +10,15 @@ using System.Xml.Linq;
 
 namespace SwimManager
 {
-    internal class Program
+    internal partial class Program
     {
-        static int Menu()
-        {
-            string[] actions = {
-                "Сгенерировать заплывы",
-                "Загрузить данные о пловцах"
+        static string[] contest_actions = {
+                "Загрузить участников",
+                "Сгенерировать протоколы",
+                "Загрузить результаты",
             };
+        static int Menu(string[] actions)
+        {
             int i = 1;
             foreach (var s in actions)
                 Console.WriteLine($"{i++}. {s}");
@@ -28,8 +29,6 @@ namespace SwimManager
 
         static void Main(string[] args)
         {
-            SwimDB db = new SwimDB();
-            bool emptyDB = db.Database.EnsureCreated();
             List<(int, int)> categories = new()
             {
                 (5, 6),
@@ -45,31 +44,33 @@ namespace SwimManager
 
             while (true)
             {
-                switch (Menu())
+                switch (Menu([
+                    "Клуб",
+                    "Соревнования"
+                    ]))
                 {
                     case 0:
                         return;
                     case 1:
                         {
-                            var swimmers = db.Swimmers.Include(s=>s.AllResults).ToList();
+                            ClubMode();
+
+                            //var swimmers = db.Swimmers.Include(s => s.AllResults).ToList();
                             //GenerateRuns(swimmers, new List<(int, int)> { (20,29), (30, 39)});
-                            GenerateRuns(Parser.ParseApplicationsFromXLSX());
+                            //GenerateRuns(Parser.ParseApplicationsFromXLSX());
                             break;
                         }
                     case 2:
                         {
                             var swimmers = ParseResults();
-                            db.Swimmers.AddRange(swimmers);
-                            db.SaveChanges();
+                            //db.Swimmers.AddRange(swimmers);
+                            //db.SaveChanges();
                             break;
                         }
                 }
             }
-
-            
-
-
         }
+
         static Dictionary<string, Style> keyToStyle = new Dictionary<string, Style>()
         {
             { "кр", Style.Freestyle },
