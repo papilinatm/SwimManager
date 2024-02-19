@@ -1,6 +1,7 @@
 ﻿using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -64,6 +65,16 @@ namespace SwimManager
 
     public static class Utils
     {
+
+        public static Dictionary<string, Style> keyToStyle = new Dictionary<string, Style>()
+        {
+            { "кр", Style.Freestyle },
+            { "вс", Style.Freestyle },
+            { "бат", Style.Butterfly },
+            { "сп", Style.Backstroke},
+            { "бр", Style.Breaststroke},
+            { "кмп", Style.Medley }
+        };
         public static int InputInt (int min, int max)// where T : struct, IComparable<T>
         {
 
@@ -74,6 +85,16 @@ namespace SwimManager
                 Console.WriteLine($"Введите число от {min} до {max}:") ;
             }
             return res;
+        }
+
+        public static bool TryParseTimeSpan(string date, out TimeSpan time)
+        {
+            return TimeSpan.TryParseExact(date, @"s\.ff", CultureInfo.InvariantCulture, out time) ||
+                                        TimeSpan.TryParseExact(date, @"s", CultureInfo.InvariantCulture, out time) ||
+                                        TimeSpan.TryParseExact(date, @"m\:s\.ff", CultureInfo.InvariantCulture, out time) ||
+                                        TimeSpan.TryParseExact(date, @"m\:s", CultureInfo.InvariantCulture, out time) ||
+                                        TimeSpan.TryParseExact(date, @"h\:m\:s\.ff", CultureInfo.InvariantCulture, out time) ||
+                                        TimeSpan.TryParseExact(date, @"h\:m\:s", CultureInfo.InvariantCulture, out time);
         }
         public static Dictionary<Style, string> StyleToString { get; } = new()
         {

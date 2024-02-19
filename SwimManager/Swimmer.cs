@@ -48,6 +48,28 @@ namespace SwimManager
         public Swimmer()
         {
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="main"></param>
+        /// <param name="extra"></param>
+        /// <returns>true if merged, false if main and extra are different</returns>
+        public static bool MergeSwimmers(Swimmer main, Swimmer extra)
+        {
+            if ((main.Year == extra.Year) && (main.Gender == extra.Gender) && (main.Name.Contains(extra.Name) || extra.Name.Contains(main.Name)))
+            {
+                if (main.Name.Length<extra.Name.Length)
+                    main.Name = extra.Name;
+
+                List<Result> all = new List<Result>(main.AllResults);
+                all.AddRange(extra.AllResults);
+                HashSet<Result> result = new HashSet<Result>(all);
+                main.AllResults = result.ToList();
+                
+                return true;
+            }
+            return false;
+        }
 
         public int ID { get; internal set; }
         public string Name { get; internal set; }

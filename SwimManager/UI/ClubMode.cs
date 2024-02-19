@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -54,53 +55,12 @@ namespace SwimManager
                         }
                     case 1:
                         {
+                            ImportSwimmers(db);
                             break;
                         }
                     case 2:
                         {
-                            List <Swimmer> swimmers = new List <Swimmer>();
-                            switch(Menu([
-                                "Экспортировать всех",
-                                "Выбрать"
-                                ]))
-                            {
-                                case 0:
-                                    {
-                                        break;
-                                    }
-                                case 1:
-                                    {
-                                        swimmers = db.Swimmers.ToList();
-                                        break;
-                                    }
-                                case 2:
-                                    {
-                                        Console.WriteLine("Введите год рождения (от Enter до Enter)");
-                                        var y1 = Utils.InputInt(1900, DateTime.Now.Year);
-                                        var y2 = Utils.InputInt(1900, DateTime.Now.Year);
-                                        int min = y1 > y2 ? y2 : y1;
-                                        int max = y1 > y2 ? y1 : y2;
-                                        swimmers = db.Swimmers.Where(sw=> sw.Year>=min && sw.Year<=max).ToList();
-                                        break;
-                                    }
-                            }
-                            if (swimmers.Count == 0)
-                                Console.WriteLine("Нет пловцов для выгрузки");
-                            else
-                            {
-                                Console.WriteLine("Название файла для сохранения (если файл существует, он будет перезаписан)");
-                                var path = export_folder + Console.ReadLine() + ".csv";
-                                if (ExportSwimmersToCSV(swimmers, path))
-                                {
-                                    Console.WriteLine($"Данные сохранены в {path}");
-                                }
-                                else
-                                { 
-                                    Console.WriteLine($"Что-то пошло не так :(");
-                                }
-
-
-                            }
+                            ExportSwimmers(db);
                             break;
                         }
                     case 3:
@@ -112,23 +72,180 @@ namespace SwimManager
                 }
         }
 
-        private static bool ExportSwimmersToCSV(List<Swimmer> swimmers, string path)
+        private static void ImportSwimmers(SwimDB db)
         {
-            var folder = Path.GetDirectoryName(path);
-            if (folder == null)
-                return false;
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
-
-
-            using StreamWriter streamWriter = new StreamWriter(path, false, new UTF8Encoding(true));
-            streamWriter.WriteLine(string.Join(",", ["ФИО", "Пол", "Год"]));
-            foreach (Swimmer s in swimmers)
+            string default_folder="";
+            string ext = "";
+            int mode = Menu([
+                "Загрузить список заявок (выгрузка от учебного отдела)",
+                "Загрузить список пловцов с результатами",
+                ]);//1 - xsls, 2 - csv
+            switch (mode)
             {
-                streamWriter.WriteLine($"{s.Name},{(char)s.Gender},{s.Year},");
+                case 0:
+                    {
+                        return;
+                    }
+                case 1:
+                    {
+                        default_folder = @"data\xlsx\";
+                        ext = "xlsx";
+                        break;
+                    }
+                case 2:
+                    {
+                        default_folder = @"data\csv\";
+                        ext = "csv";
+                        break;
+                    }
+            }
+            string[] paths = { };
+            switch (Menu([
+                "Загрузить все файлы из папки",
+                "Загрузить файл",
+                ]))
+            {
+                case 0:
+                    {
+                        return;
+                    }
+                case 1:
+                    {
+                        Console.WriteLine($"Путь к папке (Enter, если папка по умолчанию - {default_folder}):");
+                        var path = Console.ReadLine();
+                        if (string.IsNullOrEmpty(path))
+                            path = default_folder;
+                        if (!Directory.Exists(path))
+                        {
+                            Console.WriteLine("Папки не существует");
+                            return;
+                        }
+                        paths = Directory.GetFiles(path, $"*.{ext}");
+                        break;
+                    }
+                case 2:
+                    {
+                        Console.WriteLine($"Путь к файлу с расширением (например, data.{ext}):");
+                        var path = Console.ReadLine();
+                        if (!File.Exists(path))
+                        {
+                            Console.WriteLine("Файла не существует");
+                            return;
+                        }
+                        paths = [Path.GetFullPath(path)];
+                        break;
+                    }
+            }
+            switch (mode)
+            {
+                case 1:
+                    {
+                        List<Swimmer> swimmers = new List<Swimmer>();
+                        foreach (var path in paths)
+                            swimmers.AddRange(ExportImport.ImportSwimmersFromApplicationList(path));
+
+
+                        db.Swimmers.AddRange();
+                        break;
+                    }
+                case 2:
+                    {
+                        List<Swimmer> swimmers = new List<Swimmer>();
+                        List<Swimmer> all = new List<Swimmer>();
+                        foreach (var path in paths)
+                        {
+                            try
+                            {
+                                swimmers = ExportImport.ImportSwimmersAndResults(path, ',');
+                            }
+                            catch (Exception)
+                            {
+                                try
+                                {
+                                    swimmers=ExportImport.ImportSwimmersAndResults(path, ';');
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine("Неверный формат файла");
+                                    Console.WriteLine(ex.Message);
+                                }
+                            }
+                            all = MergeSwimmers(all, swimmers);
+                        }
+                        if (all.Count>0)
+                        {
+                            foreach (var s in all)
+                                Console.WriteLine(s);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Нет пловцов для импорта");
+                        }
+                        break;
+                    }
             }
 
-            return true;
+            db.SaveChanges();
+        }
+
+        private static List<Swimmer> MergeSwimmers(List<Swimmer> all, List<Swimmer> swimmers)
+        {
+            foreach (var s in swimmers)
+            {
+                foreach (var sw in all)
+                    Swimmer.MergeSwimmers(sw, s);
+            }
+            return all;
+        }
+
+        private static void ExportSwimmers(SwimDB db)
+        {
+            List<Swimmer> swimmers = new List<Swimmer>();
+            switch (Menu([
+                "Экспортировать всех",
+                                "Выбрать"
+                ]))
+            {
+                case 0:
+                    {
+                        return;
+                    }
+                case 1:
+                    {
+                        swimmers = db.Swimmers.ToList();
+                        break;
+                    }
+                case 2:
+                    {
+                        Console.WriteLine("Введите год рождения (от Enter до Enter)");
+                        var y1 = Utils.InputInt(1900, DateTime.Now.Year);
+                        var y2 = Utils.InputInt(1900, DateTime.Now.Year);
+                        int min = y1 > y2 ? y2 : y1;
+                        int max = y1 > y2 ? y1 : y2;
+                        swimmers = db.Swimmers.Where(sw => sw.Year >= min && sw.Year <= max).ToList();
+                        break;
+                    }
+            }
+            if (swimmers.Count == 0)
+                Console.WriteLine("Нет пловцов для выгрузки");
+            else
+            {
+                Console.WriteLine("Название файла для сохранения (если файл существует, он будет перезаписан)");
+                var path = Path.GetFullPath(export_folder + Console.ReadLine() + ".csv");
+                if (ExportImport.ExportSwimmersToCSV(swimmers, path))
+                {
+                    Console.WriteLine($"Данные сохранены в {path}. Открыть?");
+                    if (YesNo())
+                        new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } }.Start();
+
+                }
+                else
+                {
+                    Console.WriteLine($"Что-то пошло не так :(");
+                }
+
+
+            }
         }
     }
 }

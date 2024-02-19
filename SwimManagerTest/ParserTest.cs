@@ -12,7 +12,7 @@ namespace SwimManagerTest
         [Test]
         public void ParseApplicationsFromXLSXTest()
         {
-            Parser.ParseApplicationsFromXLSX();
+            ExportImport.ImportSwimmersFromApplicationList(@"data\xlsx\test.xlsx");
             Assert.Pass();
         }
     }

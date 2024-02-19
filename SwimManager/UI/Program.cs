@@ -17,6 +17,12 @@ namespace SwimManager
                 "Сгенерировать протоколы",
                 "Загрузить результаты",
             };
+
+        static bool YesNo()
+        {
+            Console.WriteLine("1. Да\n2. Нет");
+            return Utils.InputInt(1, 2) == 1;
+        }
         static int Menu(string[] actions)
         {
             int i = 1;
@@ -54,91 +60,19 @@ namespace SwimManager
                     case 1:
                         {
                             ClubMode();
-
-                            //var swimmers = db.Swimmers.Include(s => s.AllResults).ToList();
-                            //GenerateRuns(swimmers, new List<(int, int)> { (20,29), (30, 39)});
-                            //GenerateRuns(Parser.ParseApplicationsFromXLSX());
                             break;
                         }
                     case 2:
                         {
-                            var swimmers = ParseResults();
+
+                            //var swimmers = db.Swimmers.Include(s => s.AllResults).ToList();
+                            //GenerateRuns(swimmers, new List<(int, int)> { (20,29), (30, 39)});
+                            //GenerateRuns(ExportImport.ImportSwimmersFromApplicationList());
                             //db.Swimmers.AddRange(swimmers);
                             //db.SaveChanges();
                             break;
                         }
                 }
-            }
-        }
-
-        static Dictionary<string, Style> keyToStyle = new Dictionary<string, Style>()
-        {
-            { "кр", Style.Freestyle },
-            { "вс", Style.Freestyle },
-            { "бат", Style.Butterfly },
-            { "сп", Style.Backstroke},
-            { "бр", Style.Breaststroke},
-            { "кмп", Style.Medley }
-        };
-        private static List<Swimmer> ParseResults()
-        {
-            Console.WriteLine("Введите название файла: ");
-            string file = Console.ReadLine();
-            if (!File.Exists(file))
-            {
-                Console.WriteLine("Файл не найден");
-                return new List<Swimmer>();
-            }
-            List<Swimmer> swimmers = new List<Swimmer>();
-            try
-            {
-                using StreamReader sr = new(file);
-                var header = sr.ReadLine().Split(',');
-                //parse dates
-                List <DateTime> dateTimes = new List<DateTime>();
-                for (int i = 3; i < header.Length; i += 3)
-                {
-                    if (DateTime.TryParse(header[i], out DateTime date))
-                        dateTimes.Add(date);
-                }
-
-                var str = sr.ReadLine();
-                while (str != null)
-                {
-                    var data = str.Split(',');
-                    Swimmer swimmer = new (
-                        data[0],
-                        data[1] == "ж" ? Gender.Female : Gender.Male,
-                        int.Parse(data[2])
-                        );
-
-                    //ParsePersonalResults
-                    for (int i = 3; i < data.Length; i += 3)
-                    {
-                        if (data[i] == "" || data[i + 1] == "" || data[i + 2] == ""
-                            || !keyToStyle.ContainsKey(data[i])
-                            || !int.TryParse(data[i + 1], out int dist)
-                            )
-                            continue;
-
-                        if (TimeSpan.TryParseExact(data[i + 2], @"s\.ff", CultureInfo.InvariantCulture, out TimeSpan time) ||
-                            TimeSpan.TryParseExact(data[i + 2], @"s", CultureInfo.InvariantCulture, out time) ||
-                            TimeSpan.TryParseExact(data[i + 2], @"m\:s\.ff", CultureInfo.InvariantCulture, out time) ||
-                            TimeSpan.TryParseExact(data[i + 2], @"m\:s", CultureInfo.InvariantCulture, out time) ||
-                            TimeSpan.TryParseExact(data[i + 2], @"h\:m\:s\.ff", CultureInfo.InvariantCulture, out time) ||
-                            TimeSpan.TryParseExact(data[i + 2], @"h\:m\:s", CultureInfo.InvariantCulture, out time))
-                            swimmer.AllResults.Add(new(keyToStyle[data[i]], dist, time, dateTimes[i / 3 - 1], true));
-                    }
-                    swimmers.Add(swimmer);  
-                    str = sr.ReadLine();
-                }
-                return swimmers;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Неверный формат файла");
-                Console.WriteLine(e.Message);
-                return new List<Swimmer>();
             }
         }
 
