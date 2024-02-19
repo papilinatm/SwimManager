@@ -74,7 +74,7 @@ namespace SwimManager
 
         private static void ImportSwimmers(SwimDB db)
         {
-            string default_folder="";
+            string default_folder = "";
             string ext = "";
             int mode = Menu([
                 "Загрузить список заявок (выгрузка от учебного отдела)",
@@ -136,22 +136,19 @@ namespace SwimManager
                         break;
                     }
             }
+
+            List<Swimmer> imported_swimmers = new List<Swimmer>();
             switch (mode)
             {
                 case 1:
                     {
-                        List<Swimmer> swimmers = new List<Swimmer>();
                         foreach (var path in paths)
-                            swimmers.AddRange(ExportImport.ImportSwimmersFromApplicationList(path));
-
-
-                        db.Swimmers.AddRange();
+                            Swimmer.MergeSwimmers(imported_swimmers, ExportImport.ImportSwimmersFromApplicationList(path));
                         break;
                     }
                 case 2:
                     {
                         List<Swimmer> swimmers = new List<Swimmer>();
-                        List<Swimmer> all = new List<Swimmer>();
                         foreach (var path in paths)
                         {
                             try
@@ -162,7 +159,7 @@ namespace SwimManager
                             {
                                 try
                                 {
-                                    swimmers=ExportImport.ImportSwimmersAndResults(path, ';');
+                                    swimmers = ExportImport.ImportSwimmersAndResults(path, ';');
                                 }
                                 catch (Exception ex)
                                 {
@@ -170,32 +167,23 @@ namespace SwimManager
                                     Console.WriteLine(ex.Message);
                                 }
                             }
-                            all = MergeSwimmers(all, swimmers);
-                        }
-                        if (all.Count>0)
-                        {
-                            foreach (var s in all)
-                                Console.WriteLine(s);
-                        }
-                        else
-                        {
-                            Console.WriteLine("Нет пловцов для импорта");
+                            Swimmer.MergeSwimmers(imported_swimmers, swimmers);
                         }
                         break;
                     }
             }
-
-            db.SaveChanges();
-        }
-
-        private static List<Swimmer> MergeSwimmers(List<Swimmer> all, List<Swimmer> swimmers)
-        {
-            foreach (var s in swimmers)
+            if (imported_swimmers.Count() == 0)
             {
-                foreach (var sw in all)
-                    Swimmer.MergeSwimmers(sw, s);
+                Console.WriteLine("Нет пловцов для импорта");
+                return;
             }
-            return all;
+
+            Console.WriteLine("Загружены данные о пловцах:");
+            foreach (var s in imported_swimmers)
+                Console.WriteLine(s);
+            Console.WriteLine();
+
+            db.MergeSwimmers(imported_swimmers);
         }
 
         private static void ExportSwimmers(SwimDB db)
@@ -203,7 +191,7 @@ namespace SwimManager
             List<Swimmer> swimmers = new List<Swimmer>();
             switch (Menu([
                 "Экспортировать всех",
-                                "Выбрать"
+                "Выбрать"
                 ]))
             {
                 case 0:
@@ -232,19 +220,16 @@ namespace SwimManager
             {
                 Console.WriteLine("Название файла для сохранения (если файл существует, он будет перезаписан)");
                 var path = Path.GetFullPath(export_folder + Console.ReadLine() + ".csv");
-                if (ExportImport.ExportSwimmersToCSV(swimmers, path))
+                Console.WriteLine("Разделитель (обычно , или ; в зависимости от настроек программы для просмотра)");
+
+                if (ExportImport.ExportSwimmersToCSV(swimmers, path, Console.ReadLine()))
                 {
                     Console.WriteLine($"Данные сохранены в {path}. Открыть?");
                     if (YesNo())
                         new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } }.Start();
-
                 }
                 else
-                {
                     Console.WriteLine($"Что-то пошло не так :(");
-                }
-
-
             }
         }
     }
