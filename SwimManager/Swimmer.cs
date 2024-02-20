@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace SwimManager
 {
-    public class Swimmer
+    public class Swimmer:IEquatable<Swimmer>
     {
+        private string _name;
+        private string full_name;
+
         public Swimmer(string name, Gender gender, int year)
         {
             Name = name;
@@ -17,9 +21,24 @@ namespace SwimManager
         {
         }
         public int ID { get; internal set; }
-        public string Name { get; internal set; }
-        public int? Year { get; internal set; }
-        public Gender? Gender { get; internal set; }
+        public string Name
+        {
+            get
+            {
+                return full_name;
+            }
+            set
+            {
+                full_name = Regex.Replace(value.Trim(), @"(\s)\1+", "$1"); 
+                var items = full_name.Split(' ');
+                if (items.Length > 2)
+                    _name = string.Join(' ', items.Take(2));
+                else
+                    _name = Name;
+            }
+        }
+        public int Year { get; set; }
+        public Gender? Gender { get; set; }
 
         public ICollection<Result> AllResults { get; set; } = new List<Result>();
 
@@ -27,10 +46,30 @@ namespace SwimManager
         {
             return $"{Name}, {((char?)Gender) ?? '-'}, {Year}";
         }
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(_name, Gender, Year);
+        }
         public override bool Equals(object? obj)
         {
-            return obj is Swimmer && AreSame(this, (Swimmer)obj);
+            return Equals(obj as Swimmer);
         }
+        public bool Equals(Swimmer? other)
+        {
+            return !ReferenceEquals(other, null) 
+                && (ReferenceEquals(this, other) || AreSame(this, other));
+        }
+        public static bool operator == (Swimmer obj1, Swimmer obj2)
+        {
+            if (ReferenceEquals(obj1, obj2))
+                return true;
+            if (ReferenceEquals(obj1, null))
+                return false;
+            if (ReferenceEquals(obj2, null))
+                return false;
+            return obj1.Equals(obj2);
+        }
+        public static bool operator !=(Swimmer obj1, Swimmer obj2) => !(obj1 == obj2);
         public string PrintWithPersonalBest(Style style, int distance)
         {
             return ToString() + $", {GetPersonalBest(style, distance)?.Time.ToString(@"mm\:ss\.ff") ?? "N/A"}";
@@ -64,7 +103,11 @@ namespace SwimManager
 
         public static bool AreSame(Swimmer main, Swimmer extra)
         {
-            return (main.Year == extra.Year) && (main.Gender == extra.Gender) && (main.Name.Contains(extra.Name) || extra.Name.Contains(main.Name));
+            bool different =
+                (main.Year!=default && extra.Year!=default && main.Year != extra.Year)
+                || (main.Gender != null && extra.Gender != null && main.Gender != extra.Gender)
+                || (!main.Name.Contains(extra.Name) && !extra.Name.Contains(main.Name));
+            return !different;
         }
 
         /// <summary>
@@ -79,6 +122,10 @@ namespace SwimManager
             {
                 if (main.Name.Length < extra.Name.Length)
                     main.Name = extra.Name;
+                if (main.Year==default)
+                    main.Year = extra.Year;
+                if (main.Gender==null)
+                    main.Gender = extra.Gender;
 
                 List<Result> all = new List<Result>(main.AllResults);
                 all.AddRange(extra.AllResults);
@@ -89,16 +136,17 @@ namespace SwimManager
             }
             return false;
         }
-        public static void MergeSwimmers(List<Swimmer> all, IEnumerable<Swimmer> new_items)
+        public static void MergeSwimmers(List<Swimmer> main, IEnumerable<Swimmer> extra)
         {
-            foreach (var i in new_items)
+            foreach (var i in extra)
             {
-                var origin = all.FirstOrDefault(it => Swimmer.AreSame(it, i));
+                var origin = main.FirstOrDefault(it => Swimmer.AreSame(it, i));
                 if (origin == null)
-                    all.Add(i);
+                    main.Add(i);
                 else
                     Swimmer.MergeSwimmers(origin, i);
             }
         }
+
     }
 }
