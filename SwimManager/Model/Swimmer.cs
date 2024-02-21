@@ -5,10 +5,22 @@ using System.Text.RegularExpressions;
 
 namespace SwimManager
 {
-    public class Swimmer:IEquatable<Swimmer>
+    public class Swimmer : IEquatable<Swimmer>
     {
-        private string _name;
         private string full_name;
+        private string core_name;
+        private string Core_name
+        {
+            get
+            {
+                if (core_name == null)
+                {
+                    var items = full_name.Split(' ');
+                    core_name = (items.Length > 2) ? string.Join(' ', items.Take(2)) : full_name;
+                }
+                return core_name;
+            }
+        }
 
         public Swimmer(string name, Gender gender, int year)
         {
@@ -29,12 +41,7 @@ namespace SwimManager
             }
             set
             {
-                full_name = Regex.Replace(value.Trim(), @"(\s)\1+", "$1"); 
-                var items = full_name.Split(' ');
-                if (items.Length > 2)
-                    _name = string.Join(' ', items.Take(2));
-                else
-                    _name = Name;
+                full_name = Regex.Replace(value.Trim(), @"(\s)\1+", "$1");
             }
         }
         public int Year { get; set; }
@@ -48,7 +55,7 @@ namespace SwimManager
         }
         public override int GetHashCode()
         {
-            return HashCode.Combine(_name, Gender, Year);
+            return HashCode.Combine(Core_name, Gender, Year);
         }
         public override bool Equals(object? obj)
         {
@@ -56,10 +63,10 @@ namespace SwimManager
         }
         public bool Equals(Swimmer? other)
         {
-            return !ReferenceEquals(other, null) 
+            return !ReferenceEquals(other, null)
                 && (ReferenceEquals(this, other) || AreSame(this, other));
         }
-        public static bool operator == (Swimmer obj1, Swimmer obj2)
+        public static bool operator ==(Swimmer obj1, Swimmer obj2)
         {
             if (ReferenceEquals(obj1, obj2))
                 return true;
@@ -104,7 +111,7 @@ namespace SwimManager
         public static bool AreSame(Swimmer main, Swimmer extra)
         {
             bool different =
-                (main.Year!=default && extra.Year!=default && main.Year != extra.Year)
+                (main.Year != default && extra.Year != default && main.Year != extra.Year)
                 || (main.Gender != null && extra.Gender != null && main.Gender != extra.Gender)
                 || (!main.Name.Contains(extra.Name) && !extra.Name.Contains(main.Name));
             return !different;
@@ -122,9 +129,9 @@ namespace SwimManager
             {
                 if (main.Name.Length < extra.Name.Length)
                     main.Name = extra.Name;
-                if (main.Year==default)
+                if (main.Year == default)
                     main.Year = extra.Year;
-                if (main.Gender==null)
+                if (main.Gender == null)
                     main.Gender = extra.Gender;
 
                 List<Result> all = new List<Result>(main.AllResults);

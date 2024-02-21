@@ -1,6 +1,7 @@
 ﻿using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -75,6 +76,14 @@ namespace SwimManager
             { "бр", Style.Breaststroke},
             { "кмп", Style.Medley }
         };
+        public static Dictionary<Style, string> StyleToString { get; } = new()
+        {
+            { Style.Butterfly, "Баттерфляй"},
+            { Style.Backstroke, "Кроль на спине"},
+            { Style.Breaststroke, "Брасс"},
+            { Style.Freestyle, "Вольный стиль"},
+            { Style.Medley, "Комплексное плавание"}
+        };
         public static int InputInt (int min, int max)// where T : struct, IComparable<T>
         {
 
@@ -87,6 +96,10 @@ namespace SwimManager
             return res;
         }
 
+        public static void OpenFile(string path)
+        {
+            new Process { StartInfo = new ProcessStartInfo(Path.GetFullPath(path)) { UseShellExecute = true } }.Start();
+        }
         public static bool TryParseTimeSpan(string date, out TimeSpan time)
         {
             return TimeSpan.TryParseExact(date, @"s\.ff", CultureInfo.InvariantCulture, out time) ||
@@ -96,14 +109,7 @@ namespace SwimManager
                                         TimeSpan.TryParseExact(date, @"h\:m\:s\.ff", CultureInfo.InvariantCulture, out time) ||
                                         TimeSpan.TryParseExact(date, @"h\:m\:s", CultureInfo.InvariantCulture, out time);
         }
-        public static Dictionary<Style, string> StyleToString { get; } = new()
-        {
-            { Style.Butterfly, "Баттерфляй"},
-            { Style.Backstroke, "Кроль на спине"},
-            { Style.Breaststroke, "Брасс"},
-            { Style.Freestyle, "Вольный стиль"},
-            { Style.Medley, "Комплексное плавание"}
-        };
+
     }
 
 }

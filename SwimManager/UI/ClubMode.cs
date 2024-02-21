@@ -39,8 +39,7 @@ namespace SwimManager
         {
             string db_name = ChooseDB();
             SwimDB db = new SwimDB(db_folder + db_name);
-            bool again = true;
-            while (again)
+            while (true)
                 switch (Menu([
                     "Загрузить данные об учениках",
                     "Выгрузить данные об учениках",
@@ -50,8 +49,7 @@ namespace SwimManager
 
                     case 0:
                         {
-                            again = false;
-                            break;
+                            return;
                         }
                     case 1:
                         {
@@ -66,8 +64,7 @@ namespace SwimManager
                     case 3:
                         {
                             db.Database.EnsureDeleted();
-                            again = false;
-                            break;
+                            return;
                         }
                 }
         }
@@ -219,14 +216,20 @@ namespace SwimManager
             else
             {
                 Console.WriteLine("Название файла для сохранения (если файл существует, он будет перезаписан)");
+                /*
                 var path = Path.GetFullPath(export_folder + Console.ReadLine() + ".csv");
                 Console.WriteLine("Разделитель (обычно , или ; в зависимости от настроек программы для просмотра)");
 
-                if (ExportImport.ExportSwimmersToCSV(swimmers, path, Console.ReadLine()))
+                bool success = ExportImport.ExportSwimmersToCSV(swimmers, path, Console.ReadLine());
+                */
+
+                var path = Path.GetFullPath(export_folder + Console.ReadLine() + ".xlsx");
+                bool success = ExportImport.ExportSwimmersToXLSX(swimmers, path);
+                if (success)
                 {
                     Console.WriteLine($"Данные сохранены в {path}. Открыть?");
                     if (YesNo())
-                        new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } }.Start();
+                        Utils.OpenFile(path);
                 }
                 else
                     Console.WriteLine($"Что-то пошло не так :(");
