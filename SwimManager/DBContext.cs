@@ -23,8 +23,20 @@ namespace SwimManager
 
         public void MergeSwimmers(IEnumerable<Swimmer> new_swimmers)
         {
+            if (false && !Swimmers.Any())
+            {
+                Swimmers.AddRange(new_swimmers);
+                return;
+            }
             var exists = Swimmers.Include(s => s.AllResults).ToList();
-            Swimmer.MergeSwimmers(exists, new_swimmers);
+            foreach (var i in new_swimmers)
+            {
+                var origin = exists.FirstOrDefault(it => Swimmer.AreSame(it, i));
+                if (origin == null)
+                    Swimmers.Add(i);
+                else
+                    Swimmer.MergeSwimmers(origin, i);
+            }
             SaveChanges();
         }
 
@@ -33,7 +45,6 @@ namespace SwimManager
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            //modelBuilder.Entity<Result>().HasNoKey();
             modelBuilder.Entity<Swimmer>().HasMany(s => s.AllResults).WithOne();
         }
     }

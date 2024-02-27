@@ -14,7 +14,7 @@ namespace SwimManager
         private static void RaceMode()
         {
             while (true)
-                switch (Menu([
+                switch (Utils.Menu([
                 "Сгенерировать протоколы",
                 "Загрузить результаты",
                 ]))
@@ -104,13 +104,13 @@ namespace SwimManager
         private static void GenerateRuns(List<Participant> swimmers)
         {
             Console.WriteLine("Стиль: ");
-            Style style = (Style)Menu(
+            Style style = (Style)Utils.Menu(
                 [
-                Utils.StyleToString[Style.Butterfly],
-                Utils.StyleToString[Style.Backstroke],
-                Utils.StyleToString[Style.Breaststroke],
-                Utils.StyleToString[Style.Freestyle],
-                Utils.StyleToString[Style.Medley]
+Data.StyleToString[Style.Butterfly],
+Data.StyleToString[Style.Backstroke],
+Data.StyleToString[Style.Breaststroke],
+Data.StyleToString[Style.Freestyle],
+Data.StyleToString[Style.Medley]
                 ], false);
 
             Console.WriteLine("Дистанция, м: ");
@@ -145,10 +145,12 @@ namespace SwimManager
             }
             Console.WriteLine(buffer.ToString());
             Console.WriteLine("Сохранить?");
-            if(YesNo())
+            if(Utils.YesNo())
             {
                 Console.WriteLine("Название файла: ");
-                string path = $"data/races/{Console.ReadLine()}.txt";
+                string path = Path.GetFullPath($"data/races/{Console.ReadLine()}.txt");
+                if (!Directory.Exists(Path.GetDirectoryName(path)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(path)); 
                 File.WriteAllText(path, buffer.ToString());
                 Utils.OpenFile(path);
             }

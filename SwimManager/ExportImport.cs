@@ -1,16 +1,9 @@
 ﻿using OfficeOpenXml;
-using OfficeOpenXml.Style;
-using SQLitePCL;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using static OfficeOpenXml.ExcelErrorValue;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SwimManager
 {
@@ -28,12 +21,12 @@ namespace SwimManager
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
             using ExcelPackage xlPackage = new(new FileInfo(fileName));
-            
+
             var myWorksheet = xlPackage.Workbook.Worksheets.First(); //select sheet here
             var totalRows = myWorksheet.Dimension.End.Row;
             var totalColumns = myWorksheet.Dimension.End.Column;
 
-            var sb = new StringBuilder(); 
+            var sb = new StringBuilder();
             for (int rowNum = 6; rowNum <= totalRows; rowNum++) //select starting row here
             {
                 var row = myWorksheet.Cells[rowNum, 1, rowNum, totalColumns];
@@ -42,13 +35,13 @@ namespace SwimManager
                     continue;
                 var date = DateTime.FromOADate(double.Parse(data[5]));
                 var name = data[2];
-                var g = name.Split(" ").Select(s => Data.GetGenderByName(s)).Where(i=>i!=null).ToList();
-                
+                var g = name.Split(" ").Select(s => Data.GetGenderByName(s)).Where(i => i != null).ToList();
+
                 res.Add(new Swimmer()
                 {
                     Name = name,
                     Year = date.Year,
-                    Gender = g.Count > 0 ? g[0]: null
+                    Gender = g.Count > 0 ? g[0] : null
                 });
 
                 sb.AppendLine(string.Join(",", row));
@@ -69,7 +62,7 @@ namespace SwimManager
             using StreamWriter streamWriter = new StreamWriter(path, false, new UTF8Encoding(true));
             streamWriter.WriteLine(string.Join(delimeter, ["ФИО", "Пол", "Год"]));
             foreach (Swimmer s in swimmers)
-                streamWriter.WriteLine(string.Join(delimeter, [s.Name, (char)s.Gender,s.Year]));
+                streamWriter.WriteLine(string.Join(delimeter, [s.Name, (char)s.Gender, s.Year]));
 
             return true;
         }
@@ -88,7 +81,7 @@ namespace SwimManager
             using ExcelPackage xlPackage = new(new FileInfo(path));
 
             xlPackage.Workbook.Properties.Title = Path.GetFileNameWithoutExtension(path);
-            var worksheet = xlPackage.Workbook.Worksheets.Add("1"); 
+            var worksheet = xlPackage.Workbook.Worksheets.Add("1");
 
             worksheet.Cells[1, 1].Value = "ФИО";
             worksheet.Cells[1, 2].Value = "Пол";
@@ -96,7 +89,7 @@ namespace SwimManager
             using (var range = worksheet.Cells[1, 1, 1, 3])
                 range.Style.Font.Bold = true;
 
-            
+
             int i = 1;
             foreach (Swimmer s in swimmers)
             {
@@ -105,16 +98,16 @@ namespace SwimManager
                 worksheet.Cells[i, 2].Value = (char)s.Gender;
                 worksheet.Cells[i, 3].Value = s.Year;
             }
-            
-            worksheet.Cells[ $"A1:C{i}" ].AutoFitColumns();
-            worksheet.Cells[ $"A1:C{i}" ].AutoFilter = true;
+
+            worksheet.Cells[$"A1:C{i}"].AutoFitColumns();
+            worksheet.Cells[$"A1:C{i}"].AutoFilter = true;
 
 
             xlPackage.Save();
 
             return true;
         }
-        public static List<Swimmer> ImportSwimmersAndResults(string file, char delimeter=';')
+        public static List<Swimmer> ImportSwimmersAndResults(string file, char delimeter = ';')
         {
             List<Swimmer> swimmers = new List<Swimmer>();
             try
@@ -122,7 +115,7 @@ namespace SwimManager
                 using StreamReader sr = new(file);
                 var header = sr.ReadLine().Split(delimeter);
                 //parse dates
-                List <DateTime> dateTimes = new List<DateTime>();
+                List<DateTime> dateTimes = new List<DateTime>();
                 for (int i = 3; i < header.Length; i += 3)
                 {
                     if (DateTime.TryParse(header[i], out DateTime date))
@@ -133,9 +126,9 @@ namespace SwimManager
                 while (str != null)
                 {
                     var data = str.Split(',');
-                    Swimmer swimmer = new (
+                    Swimmer swimmer = new(
                         data[0],
-                        data[1] == "ж" ? Gender.Female : Gender.Male,
+                        data[1].ToLower() == "ж" ? Gender.Female : Gender.Male,
                         int.Parse(data[2])
                         );
 
@@ -143,15 +136,15 @@ namespace SwimManager
                     for (int i = 3; i < data.Length; i += 3)
                     {
                         if (data[i] == "" || data[i + 1] == "" || data[i + 2] == ""
-                            || !Utils.keyToStyle.ContainsKey(data[i])
+                            || !Data.keyToStyle.ContainsKey(data[i])
                             || !int.TryParse(data[i + 1], out int dist)
                             )
                             continue;
                         TimeSpan time;
-                        if (Utils.TryParseTimeSpan(data[i+2], out time))
-                            swimmer.AllResults.Add(new(Utils.keyToStyle[data[i]], dist, time, dateTimes[i / 3 - 1], true));
+                        if (Utils.TryParseTimeSpan(data[i + 2], out time))
+                            swimmer.AllResults.Add(new(Data.keyToStyle[data[i]], dist, time, dateTimes[i / 3 - 1], true));
                     }
-                    swimmers.Add(swimmer);  
+                    swimmers.Add(swimmer);
                     str = sr.ReadLine();
                 }
                 return swimmers;
@@ -169,7 +162,7 @@ namespace SwimManager
                 using StreamReader sr = new(file);
                 var header = sr.ReadLine().Split(';');
                 //parse dates
-                List <DateTime> dateTimes = new List<DateTime>();
+                List<DateTime> dateTimes = new List<DateTime>();
                 for (int i = 3; i < header.Length; i += 3)
                 {
                     if (DateTime.TryParse(header[i], out DateTime date))
@@ -180,7 +173,7 @@ namespace SwimManager
                 while (str != null)
                 {
                     var data = str.Split(',');
-                    Swimmer swimmer = new (
+                    Swimmer swimmer = new(
                         data[0],
                         data[1] == "ж" ? Gender.Female : Gender.Male,
                         int.Parse(data[2])
@@ -190,15 +183,15 @@ namespace SwimManager
                     for (int i = 3; i < data.Length; i += 3)
                     {
                         if (data[i] == "" || data[i + 1] == "" || data[i + 2] == ""
-                            || !Utils.keyToStyle.ContainsKey(data[i])
+                            || !Data.keyToStyle.ContainsKey(data[i])
                             || !int.TryParse(data[i + 1], out int dist)
                             )
                             continue;
                         TimeSpan time;
-                        if (Utils.TryParseTimeSpan(data[i+2], out time))
-                            swimmer.AllResults.Add(new(Utils.keyToStyle[data[i]], dist, time, dateTimes[i / 3 - 1], true));
+                        if (Utils.TryParseTimeSpan(data[i + 2], out time))
+                            swimmer.AllResults.Add(new(Data.keyToStyle[data[i]], dist, time, dateTimes[i / 3 - 1], true));
                     }
-                    swimmers.Add(swimmer);  
+                    swimmers.Add(swimmer);
                     str = sr.ReadLine();
                 }
                 return swimmers;
@@ -210,7 +203,7 @@ namespace SwimManager
         }
         public static List<Participant> ImportParticipantsFromXLSX(string file)
         {
-            if(!Path.Exists(file))
+            if (!Path.Exists(file))
                 return [];
 
             List<Participant> res = new List<Participant>();
@@ -218,25 +211,25 @@ namespace SwimManager
 
             using ExcelPackage xlPackage = new(new FileInfo(file));
 
-            var myWorksheet = xlPackage.Workbook.Worksheets.First(); 
+            var myWorksheet = xlPackage.Workbook.Worksheets.First();
             var totalColumns = myWorksheet.Dimension.End.Column;
             if (totalColumns < 3)
                 return [];
 
-            for (int rowNum = 2; rowNum <= myWorksheet.Dimension.End.Row; rowNum++) 
+            for (int rowNum = 2; rowNum <= myWorksheet.Dimension.End.Row; rowNum++)
             {
                 try
                 {
                     var row = myWorksheet.Cells[rowNum, 1, rowNum, totalColumns];
                     TimeSpan time = default;
-                    if (myWorksheet.Cells[rowNum, 4].Value!=null)
+                    if (myWorksheet.Cells[rowNum, 4].Value != null)
                         Utils.TryParseTimeSpan(myWorksheet.Cells[rowNum, 4].Value.ToString(), out time);
                     res.Add(new Participant()
                     {
                         Name = myWorksheet.Cells[rowNum, 1].Value.ToString(),
                         Gender = (Gender)myWorksheet.Cells[rowNum, 2].Value.ToString().ToUpper()[0],
                         Year = (int)(double)(myWorksheet.Cells[rowNum, 3].Value),
-                        PlannedTime = time==default?null:time
+                        PlannedTime = time == default ? null : time
                     });
                 }
                 catch (Exception e)
@@ -245,15 +238,15 @@ namespace SwimManager
                 }
             }
             return res;
-        }       
+        }
         public static List<Participant> ImportParticipants(string file, char delimeter = ';')
         {
             List<Participant> participants = new List<Participant>();
             FileInfo fi = new FileInfo(file);
-            
+
             using StreamReader sr = new(file);
-            var header = sr.ReadLine().Split(delimeter);
-            if (header.Length != 4)
+            var header = sr.ReadLine()?.Split(delimeter);
+            if (header == null || header?.Length != 4)
                 throw new FormatException("Количество столбцов должно быть 4");
 
             var str = sr.ReadLine();

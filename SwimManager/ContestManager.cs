@@ -70,7 +70,7 @@ namespace SwimManager
             int runNumber = 1;
 
             var str = category != null ? ($"{category?.Item1}-{category?.Item2}") : "";
-            sb.AppendLine($"{Utils.StyleToString[style]}, {dist} м, {(char)gender}{str}");
+            sb.AppendLine($"{Data.StyleToString[style]}, {dist} м, {(char)gender}{str}");
             foreach (var run in runs)
             {
                 if (run.All(s => s == null))

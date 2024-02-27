@@ -9,8 +9,6 @@ namespace SwimManager
 {
     internal partial class Program
     {
-        static string db_folder = @"data\clubs\";
-        static string export_folder = @"data\export\";
         private static string ChooseDB()
         {
             if (!Directory.Exists(db_folder))
@@ -40,7 +38,7 @@ namespace SwimManager
             string db_name = ChooseDB();
             SwimDB db = new SwimDB(db_folder + db_name);
             while (true)
-                switch (Menu([
+                switch (Utils.Menu([
                     "Загрузить данные об учениках",
                     "Выгрузить данные об учениках",
                     "Удалить клуб"
@@ -73,7 +71,7 @@ namespace SwimManager
         {
             string default_folder = "";
             string ext = "";
-            int mode = Menu([
+            int mode = Utils.Menu([
                 "Загрузить список заявок (выгрузка от учебного отдела)",
                 "Загрузить список пловцов с результатами",
                 ]);//1 - xsls, 2 - csv
@@ -97,7 +95,7 @@ namespace SwimManager
                     }
             }
             string[] paths = { };
-            switch (Menu([
+            switch (Utils.Menu([
                 "Загрузить все файлы из папки",
                 "Загрузить файл",
                 ]))
@@ -186,7 +184,7 @@ namespace SwimManager
         private static void ExportSwimmers(SwimDB db)
         {
             List<Swimmer> swimmers = new List<Swimmer>();
-            switch (Menu([
+            switch (Utils.Menu([
                 "Экспортировать всех",
                 "Выбрать"
                 ]))
@@ -223,12 +221,12 @@ namespace SwimManager
                 bool success = ExportImport.ExportSwimmersToCSV(swimmers, path, Console.ReadLine());
                 */
 
-                var path = Path.GetFullPath(export_folder + Console.ReadLine() + ".xlsx");
+                var path = Path.GetFullPath(files_folder + Console.ReadLine() + ".xlsx");
                 bool success = ExportImport.ExportSwimmersToXLSX(swimmers, path);
                 if (success)
                 {
                     Console.WriteLine($"Данные сохранены в {path}. Открыть?");
-                    if (YesNo())
+                    if (Utils.YesNo())
                         Utils.OpenFile(path);
                 }
                 else
