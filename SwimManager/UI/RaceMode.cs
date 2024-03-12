@@ -8,9 +8,7 @@ using System.Text;
 namespace SwimManager
 {
     internal partial class Program
-    {
-        static string race_folder = @"data\race\";
-        
+    {        
         private static void RaceMode()
         {
             while (true)
@@ -52,30 +50,32 @@ namespace SwimManager
         {
             try
             {
-                Console.WriteLine($"Путь к файлу с расширением (например, data.xlsx):");
-                var path = Console.ReadLine();
-                if (!File.Exists(path))
+                //Console.WriteLine($"Путь к файлу с расширением (например, data.xlsx):");
+                //var path = Console.ReadLine();
+                var path = Utils.ChooseFilesInDirectory(files_folder, "*.xlsx", false);
+                if (path.Length==0)
                 {
-                    Console.WriteLine("Файла не существует");
+                    Console.WriteLine("Нет файла для загрузки");
                     return [];
                 }
-                switch (Path.GetExtension(path))
-                {
-                    //case ".csv":
-                    //    {
-                    //        return ExportImport.ImportParticipants(path);
-                    //    }
-                    case ".xlsx":
-                        {
-                            return ExportImport.ImportParticipantsFromXLSX(path);
-                        }
-                    default:
-                        {
-                            Console.WriteLine("Неподдерживаемое расширение файла");
-                            return [];
-                        }
-                }
-                    
+                return ExportImport.ImportParticipantsFromXLSX(path[0]);
+                //switch (Path.GetExtension(path))
+                //{
+                //    //case ".csv":
+                //    //    {
+                //    //        return ExportImport.ImportParticipants(path);
+                //    //    }
+                //    case ".xlsx":
+                //        {
+                //            return ExportImport.ImportParticipantsFromXLSX(path);
+                //        }
+                //    default:
+                //        {
+                //            Console.WriteLine("Неподдерживаемое расширение файла");
+                //            return [];
+                //        }
+                //}
+
             }
             catch (Exception ex)
             {
@@ -148,7 +148,7 @@ Data.StyleToString[Style.Medley]
             if(Utils.YesNo())
             {
                 Console.WriteLine("Название файла: ");
-                string path = Path.GetFullPath($"data/races/{Console.ReadLine()}.txt");
+                string path = Path.GetFullPath($"{race_folder}{Console.ReadLine()}.txt");
                 if (!Directory.Exists(Path.GetDirectoryName(path)))
                     Directory.CreateDirectory(Path.GetDirectoryName(path)); 
                 File.WriteAllText(path, buffer.ToString());

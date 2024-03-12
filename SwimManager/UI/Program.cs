@@ -14,8 +14,9 @@ namespace SwimManager
     {
         static string data_folder = @"data\";
         static string db_folder = data_folder + @"clubs\";
+        static string race_folder = data_folder + @"races\";
         static string files_folder = data_folder + @"files\";
-        static string register_folder = files_folder + @"export\";
+        static string register_folder = files_folder + @"import\";
 
         static void Main(string[] args)
         {
@@ -23,6 +24,8 @@ namespace SwimManager
                 Directory.CreateDirectory(data_folder);
             if (!Directory.Exists(db_folder))
                 Directory.CreateDirectory(db_folder);
+            if (!Directory.Exists(race_folder))
+                Directory.CreateDirectory(race_folder);
             if (!Directory.Exists(files_folder))
                 Directory.CreateDirectory(files_folder);
             if (!Directory.Exists(register_folder))

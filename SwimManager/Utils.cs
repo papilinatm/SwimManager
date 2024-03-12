@@ -19,25 +19,38 @@ namespace SwimManager
             }
             return res;
         }
-        public static string[] ChooseFilesInDirectory(string dir, string pattern)
+        public static string[] ChooseFilesInDirectory(string dir, string pattern, bool choose_many)
         {
             var files = Directory.GetFiles(dir, pattern);
+            if (files.Length==0)
+            {
+                return [];
+            }
             int i = 1;
             foreach ( var file in files )
                 Console.WriteLine($"{i++}. {Path.GetFileName(file)}");
 
-            Console.WriteLine("Выбрать все?");
-            if (YesNo())
-                return files;
-
-            HashSet <string> res = [];
-            Console.WriteLine("Введите номера файлов по одному (номер Enter номер Enter). В конце введите 0");
-            while (true)
+            if (choose_many)
             {
+                Console.WriteLine("Выбрать все?");
+                if (YesNo())
+                    return files;
+
+                HashSet<string> res = [];
+                Console.WriteLine("Введите номера файлов по одному (номер Enter номер Enter). В конце введите 0");
+                while (true)
+                {
+                    int ind = InputInt(0, files.Length);
+                    if (ind == 0)
+                        return res.ToArray();
+                    res.Add(files[ind]);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Введите номер файла");
                 int ind = InputInt(0, files.Length);
-                if (ind == 0)
-                    return res.ToArray();
-                res.Add(files[ind]);
+                return ind == 0 ? [] : [files[ind-1]];
             }
         }
 
@@ -47,12 +60,27 @@ namespace SwimManager
         }
         public static bool TryParseTimeSpan(string date, out TimeSpan time)
         {
-            return TimeSpan.TryParseExact(date, @"s\.ff", CultureInfo.InvariantCulture, out time) ||
-                                        TimeSpan.TryParseExact(date, @"s", CultureInfo.InvariantCulture, out time) ||
-                                        TimeSpan.TryParseExact(date, @"m\:s\.ff", CultureInfo.InvariantCulture, out time) ||
-                                        TimeSpan.TryParseExact(date, @"m\:s", CultureInfo.InvariantCulture, out time) ||
-                                        TimeSpan.TryParseExact(date, @"h\:m\:s\.ff", CultureInfo.InvariantCulture, out time) ||
-                                        TimeSpan.TryParseExact(date, @"h\:m\:s", CultureInfo.InvariantCulture, out time);
+            return  (double.TryParse(date, out double d) && TryParseTimeSpan(d, out time)) ||
+                    TimeSpan.TryParseExact(date, @"s\.ff", CultureInfo.InvariantCulture, out time) ||
+                    TimeSpan.TryParseExact(date, @"s", CultureInfo.InvariantCulture, out time) ||
+                    TimeSpan.TryParseExact(date, @"m\:s\.ff", CultureInfo.InvariantCulture, out time) ||
+                    TimeSpan.TryParseExact(date, @"m\:s", CultureInfo.InvariantCulture, out time) ||
+                    TimeSpan.TryParseExact(date, @"h\:m\:s\.ff", CultureInfo.InvariantCulture, out time) ||
+                    TimeSpan.TryParseExact(date, @"h\:m\:s", CultureInfo.InvariantCulture, out time);
+        }
+        public static bool TryParseTimeSpan(double date, out TimeSpan time)
+        {
+            time = default;
+            try
+            {
+                var dt = DateTime.FromOADate(date);
+                time = dt.TimeOfDay;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
         public static bool YesNo()
         {

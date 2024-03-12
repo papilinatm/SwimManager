@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SwimManager
 {
     internal partial class Program
     {
+
         private static string ChooseDB()
         {
             if (!Directory.Exists(db_folder))
@@ -39,7 +41,7 @@ namespace SwimManager
             SwimDB db = new SwimDB(db_folder + db_name);
             while (true)
                 switch (Utils.Menu([
-                    "Загрузить данные об учениках",
+                    "Загрузить данные об учениках (выгрузка от учебного отдела)",
                     "Выгрузить данные об учениках",
                     "Удалить клуб"
                 ]))
@@ -69,68 +71,16 @@ namespace SwimManager
 
         private static void ImportSwimmers(SwimDB db)
         {
-            string default_folder = "";
-            string ext = "";
-            int mode = Utils.Menu([
-                "Загрузить список заявок (выгрузка от учебного отдела)",
-                "Загрузить список пловцов с результатами",
-                ]);//1 - xsls, 2 - csv
-            switch (mode)
+            //var paths = GetFiles();
+            string ext = "*.xlsx";
+            Console.WriteLine($"Загрузка файлов из папки {register_folder}");
+            var paths = Utils.ChooseFilesInDirectory(Path.GetFullPath(register_folder), ext, true);
+            if (paths.Length==0)
             {
-                case 0:
-                    {
-                        return;
-                    }
-                case 1:
-                    {
-                        default_folder = @"data\xlsx\";
-                        ext = "xlsx";
-                        break;
-                    }
-                case 2:
-                    {
-                        default_folder = @"data\csv\";
-                        ext = "csv";
-                        break;
-                    }
+                Console.WriteLine($"Нет файлов с расширением {ext}");
+                return;
             }
-            string[] paths = { };
-            switch (Utils.Menu([
-                "Загрузить все файлы из папки",
-                "Загрузить файл",
-                ]))
-            {
-                case 0:
-                    {
-                        return;
-                    }
-                case 1:
-                    {
-                        Console.WriteLine($"Путь к папке (Enter, если папка по умолчанию - {default_folder}):");
-                        var path = Console.ReadLine();
-                        if (string.IsNullOrEmpty(path))
-                            path = default_folder;
-                        if (!Directory.Exists(path))
-                        {
-                            Console.WriteLine("Папки не существует");
-                            return;
-                        }
-                        paths = Directory.GetFiles(path, $"*.{ext}");
-                        break;
-                    }
-                case 2:
-                    {
-                        Console.WriteLine($"Путь к файлу с расширением (например, data.{ext}):");
-                        var path = Console.ReadLine();
-                        if (!File.Exists(path))
-                        {
-                            Console.WriteLine("Файла не существует");
-                            return;
-                        }
-                        paths = [Path.GetFullPath(path)];
-                        break;
-                    }
-            }
+            int mode = 1;
 
             List<Swimmer> imported_swimmers = new List<Swimmer>();
             switch (mode)
@@ -179,6 +129,73 @@ namespace SwimManager
             Console.WriteLine();
 
             db.MergeSwimmers(imported_swimmers);
+        }
+
+        private static IEnumerable<string> GetFiles()
+        {
+            string default_folder = "";
+            string ext = "";
+            int mode = Utils.Menu([
+                "Загрузить список заявок (выгрузка от учебного отдела)",
+                "Загрузить список пловцов с результатами",
+                ]);//1 - xsls, 2 - csv
+            switch (mode)
+            {
+                case 0:
+                    {
+                        return [];
+                    }
+                case 1:
+                    {
+                        default_folder = @"data\xlsx\";
+                        ext = "xlsx";
+                        break;
+                    }
+                case 2:
+                    {
+                        default_folder = @"data\csv\";
+                        ext = "csv";
+                        break;
+                    }
+            }
+            string[] paths = { };
+            switch (Utils.Menu([
+                "Загрузить все файлы из папки",
+                "Загрузить файл",
+                ]))
+            {
+                case 0:
+                    {
+                        return [];
+                    }
+                case 1:
+                    {
+                        Console.WriteLine($"Путь к папке (Enter, если папка по умолчанию - {default_folder}):");
+                        var path = Console.ReadLine();
+                        if (string.IsNullOrEmpty(path))
+                            path = default_folder;
+                        if (!Directory.Exists(path))
+                        {
+                            Console.WriteLine("Папки не существует");
+                            return [];
+                        }
+                        paths = Directory.GetFiles(path, $"*.{ext}");
+                        break;
+                    }
+                case 2:
+                    {
+                        Console.WriteLine($"Путь к файлу с расширением (например, data.{ext}):");
+                        var path = Console.ReadLine();
+                        if (!File.Exists(path))
+                        {
+                            Console.WriteLine("Файла не существует");
+                            return [];
+                        }
+                        paths = [Path.GetFullPath(path)];
+                        break;
+                    }
+            }
+            return paths;
         }
 
         private static void ExportSwimmers(SwimDB db)
