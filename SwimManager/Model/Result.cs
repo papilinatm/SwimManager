@@ -40,10 +40,17 @@ namespace SwimManager
                 && r1.ShortWater==r2.ShortWater;                
         }
 
-        public static Result GeneratePersonalBest(Style style = Style.Freestyle, int distance = 50, bool isShort = true)
+        public static Result GenerateResult(Style style = Style.Freestyle, int distance = 50, bool isShort = true)
         {
             Random rnd = new Random();
-            return new Result() { Style= style, Distance = distance, ShortWater = isShort, Time = TimeSpan.FromSeconds(distance/2 + rnd.Next(0, distance)) };
+            return new Result()
+            {
+                Style = style,
+                Distance = distance,
+                ShortWater = isShort,
+                Time = TimeSpan.FromSeconds(distance / 2 + rnd.Next(0, distance)),
+                Date = DateTime.Today.AddDays(-rnd.Next(1, 100))
+            };
         }
     }
 }

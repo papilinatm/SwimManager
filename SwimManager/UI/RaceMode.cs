@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -41,9 +42,50 @@ namespace SwimManager
                         }
                     case 2:
                         {
+                            ImportRaceResults();
                             break;
                         }
                 }
+        }
+
+        private static void ImportRaceResults()
+        {
+            var path = Utils.ChooseFilesInDirectory(race_results_folder, "*.xlsx", false);
+            if (path.Length == 0)
+            {
+                Console.WriteLine("Нет файла для загрузки");
+                return;
+            }
+
+            Console.WriteLine("Выберите клуб: ");
+            string db_name = ChooseDB();
+            SwimDB db = new SwimDB(db_folder + db_name);
+
+            Utils.ChooseDiscipline(out Style style, out int dist, out bool short_water);
+
+            Console.WriteLine("Дата (ДД.ММ.ГГГГ): ");
+            var dt = Utils.InputDate();
+
+            var participants = ExportImport.ImportRaceResultsFromXLSX(path[0]);
+            var swimmers = db.Swimmers.Include(s => s.AllResults).AsEnumerable();
+            foreach (var p in participants)
+            {
+                if (p.Time == null)
+                    continue;
+                var r = new Result(style, dist, (TimeSpan)p.Time, dt, short_water);
+                var s = swimmers.FirstOrDefault(s => s==p);
+                if (s is null)
+                    db.Swimmers.Add(new Swimmer
+                    {
+                        Name = p.Name,
+                        Year = p.Year,
+                        Gender = p.Gender,
+                        AllResults = [r]
+                    });
+                else
+                    s.AllResults.Add(r);
+            }
+            db.SaveChanges();
         }
 
         private static List<Participant> ImportParticipants()
@@ -103,15 +145,7 @@ namespace SwimManager
 
         private static void GenerateRuns(List<Participant> swimmers)
         {
-            Console.WriteLine("Стиль: ");
-            Style style = (Style)Utils.Menu(
-                [
-Data.StyleToString[Style.Butterfly],
-Data.StyleToString[Style.Backstroke],
-Data.StyleToString[Style.Breaststroke],
-Data.StyleToString[Style.Freestyle],
-Data.StyleToString[Style.Medley]
-                ], false);
+            Style style = Utils.ChooseStyle();
 
             Console.WriteLine("Дистанция, м: ");
             int dist = Utils.InputInt(0, 100000);
@@ -145,12 +179,12 @@ Data.StyleToString[Style.Medley]
             }
             Console.WriteLine(buffer.ToString());
             Console.WriteLine("Сохранить?");
-            if(Utils.YesNo())
+            if (Utils.YesNo())
             {
                 Console.WriteLine("Название файла: ");
                 string path = Path.GetFullPath($"{race_folder}{Console.ReadLine()}.txt");
                 if (!Directory.Exists(Path.GetDirectoryName(path)))
-                    Directory.CreateDirectory(Path.GetDirectoryName(path)); 
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
                 File.WriteAllText(path, buffer.ToString());
                 Utils.OpenFile(path);
             }

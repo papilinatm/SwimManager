@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -32,7 +33,10 @@ namespace SwimManager
                     return db_names[choose - 1];
             }
             Console.WriteLine($"Название: ");
-            return Console.ReadLine();
+            var s = Console.ReadLine();
+            while (string.IsNullOrEmpty(s))
+                s= Console.ReadLine(); 
+            return s;
         }
 
         private static void ClubMode()
@@ -41,9 +45,10 @@ namespace SwimManager
             SwimDB db = new SwimDB(db_folder + db_name);
             while (true)
                 switch (Utils.Menu([
-                    "Загрузить данные об учениках (выгрузка от учебного отдела)",
+                    "Загрузить данные об учениках",
                     "Выгрузить данные об учениках",
-                    "Удалить клуб"
+                    "Удалить клуб",
+                    "Сгенерировать случайных пловцов"
                 ]))
                 {
 
@@ -66,12 +71,26 @@ namespace SwimManager
                             db.Database.EnsureDeleted();
                             return;
                         }
+                    case 4:
+                        {
+                            Console.WriteLine("Введите количество (1-1000): ");
+                            db.Swimmers.AddRange(Swimmer.GenerateSwimmers(Utils.InputInt(1, 1000)));
+                            db.SaveChanges();
+                            break;
+                        }
                 }
         }
 
         private static void ImportSwimmers(SwimDB db)
         {
             //var paths = GetFiles();
+
+            int mode = Utils.Menu([
+                "Из списка заявок (выгрузка от учебного отдела)",
+                "Из списка пловцов с результатами"
+            ]);
+            if (mode == 0)
+                return;
             string ext = "*.xlsx";
             Console.WriteLine($"Загрузка файлов из папки {register_folder}");
             var paths = Utils.ChooseFilesInDirectory(Path.GetFullPath(register_folder), ext, true);
@@ -80,7 +99,6 @@ namespace SwimManager
                 Console.WriteLine($"Нет файлов с расширением {ext}");
                 return;
             }
-            int mode = 1;
 
             List<Swimmer> imported_swimmers = new List<Swimmer>();
             switch (mode)
@@ -92,6 +110,12 @@ namespace SwimManager
                         break;
                     }
                 case 2:
+                    {
+                        foreach (var path in paths)
+                            Swimmer.MergeSwimmers(imported_swimmers, ExportImport.ImportSwimmersAndResultsFromXLSX(path));
+                        break;
+                    }
+                case 3:
                     {
                         List<Swimmer> swimmers = new List<Swimmer>();
                         foreach (var path in paths)
@@ -206,13 +230,10 @@ namespace SwimManager
                 "Выбрать"
                 ]))
             {
-                case 0:
-                    {
-                        return;
-                    }
+                case 0: return;
                 case 1:
                     {
-                        swimmers = db.Swimmers.ToList();
+                        swimmers = db.Swimmers.Include(s=>s.AllResults).ToList();
                         break;
                     }
                 case 2:
@@ -222,33 +243,65 @@ namespace SwimManager
                         var y2 = Utils.InputInt(1900, DateTime.Now.Year);
                         int min = y1 > y2 ? y2 : y1;
                         int max = y1 > y2 ? y1 : y2;
-                        swimmers = db.Swimmers.Where(sw => sw.Year >= min && sw.Year <= max).ToList();
+                        swimmers = db.Swimmers.Include(s => s.AllResults).Where(sw => sw.Year >= min && sw.Year <= max).ToList();
                         break;
                     }
             }
             if (swimmers.Count == 0)
-                Console.WriteLine("Нет пловцов для выгрузки");
-            else
             {
-                Console.WriteLine("Название файла для сохранения (если файл существует, он будет перезаписан)");
-                /*
-                var path = Path.GetFullPath(export_folder + Console.ReadLine() + ".csv");
-                Console.WriteLine("Разделитель (обычно , или ; в зависимости от настроек программы для просмотра)");
-
-                bool success = ExportImport.ExportSwimmersToCSV(swimmers, path, Console.ReadLine());
-                */
-
-                var path = Path.GetFullPath(files_folder + Console.ReadLine() + ".xlsx");
-                bool success = ExportImport.ExportSwimmersToXLSX(swimmers, path);
-                if (success)
-                {
-                    Console.WriteLine($"Данные сохранены в {path}. Открыть?");
-                    if (Utils.YesNo())
-                        Utils.OpenFile(path);
-                }
-                else
-                    Console.WriteLine($"Что-то пошло не так :(");
+                Console.WriteLine("Нет пловцов для выгрузки");
+                return;
             }
+            Console.WriteLine("Название файла для сохранения (если файл существует, он будет перезаписан)");
+            /*
+            var path = Path.GetFullPath(export_folder + Console.ReadLine() + ".csv");
+            Console.WriteLine("Разделитель (обычно , или ; в зависимости от настроек программы для просмотра)");
+
+            bool success = ExportImport.ExportSwimmersToCSV(swimmers, path, Console.ReadLine());
+            */
+
+            var path = Path.GetFullPath(files_folder + Console.ReadLine() + ".xlsx");
+            bool success = false;
+            switch (Utils.Menu([
+                "Лучшие результаты учеников",
+                "Лучшие результаты учеников по дисциплине",
+                "Все результаты учеников",
+                "Шаблон для участников соревнований",
+                "Удалить клуб"
+                ]))
+            {
+                case 0: return;
+                case 1:
+                    {
+                        success = ExportImport.ExportPersonalBestsToXLSX(swimmers, path);
+                        break;
+                    }
+                case 2:
+                    {
+                        Utils.ChooseDiscipline(out Style style, out int dist, out bool short_water);
+                        success = ExportImport.ExportPersonalBestsToXLSX(swimmers, path, style, dist, short_water);
+                        break;
+                    }
+                case 3:
+                    {
+                        success = ExportImport.ExportAllResultsToXLSX(swimmers, path);
+                        break;
+                    }
+                case 4:
+                    {
+                        success = ExportImport.ExportParticipantsToXLSX(swimmers, path);
+                        break;
+                    }
+            }
+
+            if (success)
+            {
+                Console.WriteLine($"Данные сохранены в {path}. Открыть?");
+                if (Utils.YesNo())
+                    Utils.OpenFile(path);
+            }
+            else
+                Console.WriteLine($"Что-то пошло не так :(");
         }
     }
 }

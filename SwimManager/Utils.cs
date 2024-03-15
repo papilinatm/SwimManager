@@ -19,6 +19,36 @@ namespace SwimManager
             }
             return res;
         }
+        public static DateTime InputDate()
+        {
+            DateTime res = default;
+            while (!DateTime.TryParse(Console.ReadLine(), out res))
+            {
+                Console.WriteLine($"Введите дату в формате ДД.ММ.ГГГГ:");
+            }
+            return res;
+        }
+        public static Style ChooseStyle()
+        {
+            Console.WriteLine("Стиль: ");
+            Style style = (Style)Utils.Menu(
+                [
+                    Data.StyleToString[Style.Butterfly],
+                    Data.StyleToString[Style.Backstroke],
+                    Data.StyleToString[Style.Breaststroke],
+                    Data.StyleToString[Style.Freestyle],
+                    Data.StyleToString[Style.Medley]
+                ], false);
+            return style;
+        }
+        public static void ChooseDiscipline(out Style style, out int dist, out bool short_water)
+        {
+            style = Utils.ChooseStyle();
+            Console.WriteLine("Дистанция, м: ");
+            dist = Utils.InputInt(0, 100000);
+            Console.WriteLine("Короткая вода: ");
+            short_water = Utils.YesNo();
+        }
         public static string[] ChooseFilesInDirectory(string dir, string pattern, bool choose_many)
         {
             var files = Directory.GetFiles(dir, pattern);
@@ -97,7 +127,6 @@ namespace SwimManager
             Console.WriteLine($"Выберите действие: ");
             return Utils.InputInt(exit_by_zero ? 0 : 1, actions.Length);
         }
-
     }
 
 }

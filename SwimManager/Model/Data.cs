@@ -21,7 +21,7 @@ namespace SwimManager
     {
         static Dictionary<string, Gender> names = null;
 
-        public static Dictionary<string, Style> keyToStyle = new Dictionary<string, Style>()
+        public static Dictionary<string, Style> KeyToStyle { get; } = new ()
         {
             { "кр", Style.Freestyle },
             { "вс", Style.Freestyle },
@@ -30,7 +30,15 @@ namespace SwimManager
             { "бр", Style.Breaststroke},
             { "кмп", Style.Medley }
         };
-        public static Dictionary<Style, string> StyleToString { get; } = new()
+        public static Dictionary<Style, string> StyleToShortString { get; } = new ()
+        {
+            { Style.Freestyle, "кр"},
+            { Style.Butterfly, "бат"},
+            { Style.Backstroke, "сп"},
+            { Style.Breaststroke, "бр"},
+            { Style.Medley, "кмп"}
+        };
+        public static Dictionary<Style, string> StyleToString { get; } = new ()
         {
             { Style.Butterfly, "Баттерфляй"},
             { Style.Backstroke, "Кроль на спине"},
@@ -45,7 +53,6 @@ namespace SwimManager
                 names = LoadNames();
             return names.ContainsKey(name)?names[name]:null;
         }
-
         private static Dictionary<string, Gender> LoadNames()
         {
             Dictionary<string, Gender> res = new Dictionary<string, Gender>();
@@ -69,5 +76,4 @@ namespace SwimManager
             return res;
         }
     }
-
 }

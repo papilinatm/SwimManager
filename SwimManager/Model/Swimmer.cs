@@ -32,6 +32,7 @@ namespace SwimManager
         public Swimmer()
         {
         }
+
         public int ID { get; internal set; }
         public string Name
         {
@@ -48,6 +49,16 @@ namespace SwimManager
         public Gender? Gender { get; set; }
 
         public ICollection<Result> AllResults { get; set; } = [];
+        public List<Result> PersonalBests => AllResults
+                                                .GroupBy(r => r.Style).SelectMany(all_by_styles => all_by_styles
+                                                .GroupBy(p => p.Distance).SelectMany(by_st_and_dist => by_st_and_dist
+                                                .GroupBy(p => p.ShortWater).Select(by_st_and_dist_and_short => by_st_and_dist_and_short
+                                                .MinBy(r => r.Time)))).ToList();       
+        public List<Result> LastResults => AllResults
+                                                .GroupBy(r => r.Style).SelectMany(all_by_styles => all_by_styles
+                                                .GroupBy(p => p.Distance).SelectMany(by_st_and_dist => by_st_and_dist
+                                                .GroupBy(p => p.ShortWater).Select(by_st_and_dist_and_short => by_st_and_dist_and_short
+                                                .MaxBy(r => r.Date)))).ToList();
 
         public override string ToString()
         {
@@ -70,9 +81,7 @@ namespace SwimManager
         {
             if (ReferenceEquals(obj1, obj2))
                 return true;
-            if (ReferenceEquals(obj1, null))
-                return false;
-            if (ReferenceEquals(obj2, null))
+            if (obj1 is null || obj2 is null)
                 return false;
             return obj1.Equals(obj2);
         }
@@ -86,6 +95,12 @@ namespace SwimManager
             return AllResults.Where(r => r.Style == style && r.Distance == distance && r.ShortWater == isShort)
                 .ToList()
                 .MinBy(r => r.Time);
+        }
+        public Result? GetLastResult(Style style, int distance, bool isShort = true)
+        {
+            return AllResults.Where(r => r.Style == style && r.Distance == distance && r.ShortWater == isShort)
+                .ToList()
+                .MaxBy(r => r.Date);
         }
 
         public static List<Swimmer> GenerateSwimmers(int count)
@@ -105,8 +120,8 @@ namespace SwimManager
                     Name = isBoy ? Boys[boys++ % 100] : Girls[girls++ % 100],
                     Gender = isBoy ? SwimManager.Gender.Male : SwimManager.Gender.Female,
                     Year = rnd.Next(2000, 2018),
-                    AllResults = [Result.GeneratePersonalBest((Style)rnd.Next(2, 5)), Result.GeneratePersonalBest((Style)rnd.Next(2, 5), 25)]
-                }); ;
+                    AllResults = (Enumerable.Range(0, rnd.Next(15))).Select(i => Result.GenerateResult((Style)rnd.Next(2, 5), i%3==0?50:25)).ToList()
+                });
             }
             return swimmers;
         }
@@ -151,7 +166,7 @@ namespace SwimManager
             foreach (var i in extra)
             {
                 var origin = main.FirstOrDefault(it => Swimmer.AreSame(it, i));
-                if (origin == null)
+                if (origin is null)
                     main.Add(i);
                 else
                     Swimmer.MergeSwimmers(origin, i);

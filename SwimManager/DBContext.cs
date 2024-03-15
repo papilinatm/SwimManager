@@ -32,7 +32,7 @@ namespace SwimManager
             foreach (var i in new_swimmers)
             {
                 var origin = exists.FirstOrDefault(it => Swimmer.AreSame(it, i));
-                if (origin == null)
+                if (origin is null)
                     Swimmers.Add(i);
                 else
                     Swimmer.MergeSwimmers(origin, i);

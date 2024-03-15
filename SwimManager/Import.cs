@@ -7,8 +7,9 @@ using System.Text;
 
 namespace SwimManager
 {
-    static public class ExportImport
+    static public partial class ExportImport
     {
+        #region xlsx
         /// <summary>
         /// экспорт данных из регистра заявков (формат выгрузки с госуслуг)
         /// </summary>
@@ -49,64 +50,111 @@ namespace SwimManager
 
             return res;
         }
-
-        public static bool ExportSwimmersToCSV(List<Swimmer> swimmers, string path, string delimeter = ";")
+        public static List<Participant> ImportParticipantsFromXLSX(string file)
         {
-            var folder = Path.GetDirectoryName(path);
-            if (folder == null)
-                return false;
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
+            if (!Path.Exists(file))
+                return [];
 
-
-            using StreamWriter streamWriter = new StreamWriter(path, false, new UTF8Encoding(true));
-            streamWriter.WriteLine(string.Join(delimeter, ["ФИО", "Пол", "Год"]));
-            foreach (Swimmer s in swimmers)
-                streamWriter.WriteLine(string.Join(delimeter, [s.Name, (char)s.Gender, s.Year]));
-
-            return true;
-        }
-        public static bool ExportSwimmersToXLSX(List<Swimmer> swimmers, string path)
-        {
-            var folder = Path.GetDirectoryName(path);
-            if (folder == null)
-                return false;
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
-            if (File.Exists(path))
-                File.Delete(path);
-
+            List<Participant> res = new List<Participant>();
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-            using ExcelPackage xlPackage = new(new FileInfo(path));
+            using ExcelPackage xlPackage = new(new FileInfo(file));
 
-            xlPackage.Workbook.Properties.Title = Path.GetFileNameWithoutExtension(path);
-            var worksheet = xlPackage.Workbook.Worksheets.Add("1");
+            var myWorksheet = xlPackage.Workbook.Worksheets.First();
+            var totalColumns = myWorksheet.Dimension.End.Column;
+            if (totalColumns < 3)
+                return [];
+            int time_column = (totalColumns == 4) ? 4 : 5;
 
-            worksheet.Cells[1, 1].Value = "ФИО";
-            worksheet.Cells[1, 2].Value = "Пол";
-            worksheet.Cells[1, 3].Value = "Год";
-            using (var range = worksheet.Cells[1, 1, 1, 3])
-                range.Style.Font.Bold = true;
-
-
-            int i = 1;
-            foreach (Swimmer s in swimmers)
+            for (int rowNum = 2; rowNum <= myWorksheet.Dimension.End.Row; rowNum++)
             {
-                i++;
-                worksheet.Cells[i, 1].Value = s.Name;
-                worksheet.Cells[i, 2].Value = (char)s.Gender;
-                worksheet.Cells[i, 3].Value = s.Year;
+                try
+                {
+                    var row = myWorksheet.Cells[rowNum, 1, rowNum, totalColumns];
+                    TimeSpan time = default;
+                    if (myWorksheet.Cells[rowNum, time_column].Value != null)
+                        Utils.TryParseTimeSpan(myWorksheet.Cells[rowNum, time_column].Value.ToString(), out time);
+                    res.Add(new Participant()
+                    {
+                        Name = myWorksheet.Cells[rowNum, 1].Value.ToString(),
+                        Gender = (Gender)myWorksheet.Cells[rowNum, 2].Value.ToString().ToUpper()[0],
+                        Year = (int)(double)(myWorksheet.Cells[rowNum, 3].Value),
+                        Time = time == default ? null : time
+                    });
+                }
+                catch (Exception e)
+                {
+
+                }
             }
-
-            worksheet.Cells[$"A1:C{i}"].AutoFitColumns();
-            worksheet.Cells[$"A1:C{i}"].AutoFilter = true;
-
-
-            xlPackage.Save();
-
-            return true;
+            return res;
         }
+        public static List<Participant> ImportRaceResultsFromXLSX(string file)
+        {
+            return ImportParticipantsFromXLSX(file);
+        }
+        public static List<Swimmer> ImportSwimmersAndResultsFromXLSX(string file)
+        {
+            try
+            {
+
+                if (!Path.Exists(file))
+                    return [];
+
+                HashSet<Swimmer> res = new HashSet<Swimmer>();
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+                using ExcelPackage xlPackage = new(new FileInfo(file));
+                var myWorksheet = xlPackage.Workbook.Worksheets.First();
+                var totalColumns = myWorksheet.Dimension.End.Column;
+                if (totalColumns < 3)
+                    return [];
+
+                for (int rowNum = 2; rowNum <= myWorksheet.Dimension.End.Row; rowNum++)
+                {
+                    try
+                    {
+                        var row = myWorksheet.Cells[rowNum, 1, rowNum, totalColumns];
+
+                        var s = new Swimmer()
+                        {
+                            Name = myWorksheet.Cells[rowNum, 1].Value.ToString(),
+                            Gender = (Gender)myWorksheet.Cells[rowNum, 2].Value.ToString().ToUpper()[0],
+                            Year = (int)(double.Parse(myWorksheet.Cells[rowNum, 3].Value.ToString()))
+                        };
+                        if (!res.Contains(s))
+                            res.Add(s);
+
+                        if (totalColumns < 8)//without results
+                            continue;
+
+                        TimeSpan time = default;
+                        if (myWorksheet.Cells[rowNum, 6].Value != null
+                            && Utils.TryParseTimeSpan(myWorksheet.Cells[rowNum, 6].Value.ToString(), out time))
+                        {
+                            res.First(i => i == s).AllResults.Add(new Result(
+                                Data.KeyToStyle[myWorksheet.Cells[rowNum, 4].Value.ToString()],
+                                int.Parse(myWorksheet.Cells[rowNum, 5].Value.ToString()),
+                                time,
+                                DateTime.Parse(myWorksheet.Cells[rowNum, 7].Value.ToString()),
+                                myWorksheet.Cells[rowNum, 8].Value.ToString() == "Да"));
+                        }
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+                }
+                return res.ToList();
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        #endregion
+        #region csv
         public static List<Swimmer> ImportSwimmersAndResults(string file, char delimeter = ';')
         {
             List<Swimmer> swimmers = new List<Swimmer>();
@@ -136,13 +184,13 @@ namespace SwimManager
                     for (int i = 3; i < data.Length; i += 3)
                     {
                         if (data[i] == "" || data[i + 1] == "" || data[i + 2] == ""
-                            || !Data.keyToStyle.ContainsKey(data[i])
+                            || !Data.KeyToStyle.ContainsKey(data[i])
                             || !int.TryParse(data[i + 1], out int dist)
                             )
                             continue;
                         TimeSpan time;
                         if (Utils.TryParseTimeSpan(data[i + 2], out time))
-                            swimmer.AllResults.Add(new(Data.keyToStyle[data[i]], dist, time, dateTimes[i / 3 - 1], true));
+                            swimmer.AllResults.Add(new(Data.KeyToStyle[data[i]], dist, time, dateTimes[i / 3 - 1], true));
                     }
                     swimmers.Add(swimmer);
                     str = sr.ReadLine();
@@ -183,13 +231,13 @@ namespace SwimManager
                     for (int i = 3; i < data.Length; i += 3)
                     {
                         if (data[i] == "" || data[i + 1] == "" || data[i + 2] == ""
-                            || !Data.keyToStyle.ContainsKey(data[i])
+                            || !Data.KeyToStyle.ContainsKey(data[i])
                             || !int.TryParse(data[i + 1], out int dist)
                             )
                             continue;
                         TimeSpan time;
                         if (Utils.TryParseTimeSpan(data[i + 2], out time))
-                            swimmer.AllResults.Add(new(Data.keyToStyle[data[i]], dist, time, dateTimes[i / 3 - 1], true));
+                            swimmer.AllResults.Add(new(Data.KeyToStyle[data[i]], dist, time, dateTimes[i / 3 - 1], true));
                     }
                     swimmers.Add(swimmer);
                     str = sr.ReadLine();
@@ -200,44 +248,6 @@ namespace SwimManager
             {
                 throw;
             }
-        }
-        public static List<Participant> ImportParticipantsFromXLSX(string file)
-        {
-            if (!Path.Exists(file))
-                return [];
-
-            List<Participant> res = new List<Participant>();
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
-            using ExcelPackage xlPackage = new(new FileInfo(file));
-
-            var myWorksheet = xlPackage.Workbook.Worksheets.First();
-            var totalColumns = myWorksheet.Dimension.End.Column;
-            if (totalColumns < 3)
-                return [];
-
-            for (int rowNum = 2; rowNum <= myWorksheet.Dimension.End.Row; rowNum++)
-            {
-                try
-                {
-                    var row = myWorksheet.Cells[rowNum, 1, rowNum, totalColumns];
-                    TimeSpan time = default;
-                    if (myWorksheet.Cells[rowNum, 4].Value != null)
-                        Utils.TryParseTimeSpan(myWorksheet.Cells[rowNum, 4].Value.ToString(), out time);
-                    res.Add(new Participant()
-                    {
-                        Name = myWorksheet.Cells[rowNum, 1].Value.ToString(),
-                        Gender = (Gender)myWorksheet.Cells[rowNum, 2].Value.ToString().ToUpper()[0],
-                        Year = (int)(double)(myWorksheet.Cells[rowNum, 3].Value),
-                        PlannedTime = time == default ? null : time
-                    });
-                }
-                catch (Exception e)
-                {
-
-                }
-            }
-            return res;
         }
         public static List<Participant> ImportParticipants(string file, char delimeter = ';')
         {
@@ -258,13 +268,14 @@ namespace SwimManager
                     Name = data[0],
                     Gender = data[1].ToLower() == "ж" ? Gender.Female : Gender.Male,
                     Year = int.Parse(data[2]),
-                    PlannedTime = Utils.TryParseTimeSpan(data[3], out TimeSpan time) ? time : null
+                    Time = Utils.TryParseTimeSpan(data[3], out TimeSpan time) ? time : null
                 });
 
                 str = sr.ReadLine();
             }
             return participants;
         }
+        #endregion
 
     }
 }

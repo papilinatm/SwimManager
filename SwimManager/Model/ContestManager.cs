@@ -11,8 +11,8 @@ namespace SwimManager
         {
             List<List<Participant>> res = new List<List<Participant>>();
             var participants = swimmers.Where(s => s.Gender == gender && s.Year >= minYear && s.Year <= maxYear).ToList();
-            var qualified = participants.Where(s => s.PlannedTime != null).OrderBy(s => s.PlannedTime?.TotalSeconds).ToList();
-            var unqualified = participants.Where(s => s.PlannedTime == null).ToList();
+            var qualified = participants.Where(s => s.Time != null).OrderBy(s => s.Time?.TotalSeconds).ToList();
+            var unqualified = participants.Where(s => s.Time == null).ToList();
             double runsCount = participants.Count / pathCount + 0.99;
             int middlePath = (int)pathCount / 2;
             List<int> path = new List<int>(pathCount);
@@ -36,12 +36,12 @@ namespace SwimManager
                 {
                     run[pathOrder[j]] = (i < qualified.Count()) ? qualified[i] : unqualified[i - qualified.Count()];
                 }
-                if (!run.All(s => s == null))
+                if (!run.All(s => s is null))
                     res.Add(run);
             }
             if (res.Count > 1)
             {
-                if (res.Last().Count(s => s != null) == 1)
+                if (res.Last().Count(s => s is not null) == 1)
                 {
                     res[res.Count - 1][pathOrder[1]] = res[res.Count - 2][pathCount - 1];
                     res[res.Count - 2][pathCount - 1] = null;
@@ -73,7 +73,7 @@ namespace SwimManager
             sb.AppendLine($"{Data.StyleToString[style]}, {dist} м, {(char)gender}{str}");
             foreach (var run in runs)
             {
-                if (run.All(s => s == null))
+                if (run.All(s => s is null))
                 {
                     //sb.AppendLine("Нет заплывов\n");
                     continue;
